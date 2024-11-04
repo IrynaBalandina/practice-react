@@ -1,0 +1,91 @@
+import { useEffect } from "react";
+import { Link, useSearchParams, useLocation } from "react-router-dom";
+
+
+import Section from "../Section";
+import Loader from "../Loader/Loader";
+
+import SearchProductForm from "../SearchProductForm/SearchProductForm";
+
+
+import css from "./Shop.module.css";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  apiGetProducts,
+  apiGetProductsByQuery,
+} from "../../redux/shop/operations";
+import { selectProducts, selectProductsError, selectProductsIsLoading } from "../../redux/shop/selectors";
+
+const Shop = () => {
+  const location = useLocation();
+  const dispatch = useDispatch();
+  const products = useSelector(selectProducts);
+  const isLoading = useSelector(selectProductsIsLoading);
+  const error = useSelector(selectProductsError);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const searchValue = searchParams.get("q");
+
+  const onSearch = (searchTerm) => {
+    setSearchParams({ q: searchTerm });
+  };
+
+  useEffect(() => {
+    if (searchValue) {
+      dispatch(apiGetProductsByQuery(searchValue));
+    } else {
+      dispatch(apiGetProducts());
+    }
+  }, [dispatch, searchValue]);
+ 
+  return (
+    <div className={css.shopPage}>
+      <Section>
+        <h1>Products catalog</h1>
+        <div className={css.searchWrapper}>
+          <SearchProductForm onSearch={onSearch} />
+        </div>
+      </Section>
+      <Section title="Products list">
+        {isLoading && (
+          <div className={css.loaderWrapper}>
+            <Loader />
+          </div>
+        )}
+        {error && (
+          <p>
+            Oops, some error occured &quot;{error}&quot;. Please, try again
+            later 🤷‍♂️.
+          </p>
+        )}
+        <div className={css.list}>
+          {Array.isArray(products) &&
+            products.map((item) => {
+              return (
+                <Link
+                  state={{
+                    from: location,
+                  }}
+                  to={`/products/${item.id}`}
+                  key={item.id}
+                  className={css.listItem}
+                >
+                  <img
+                    className={css.itemImg}
+                    src={item.thumbnail}
+                    alt={item.title}
+                  />
+                  <h3 className={css.itemTitle}>{item.title}</h3>
+                  <p className={css.itemDescription}>{item.description}</p>
+                  <p className={css.itemDescription}>Rating: {item.rating}</p>
+                </Link>
+              );
+            })}
+        </div>
+      </Section>
+    </div>
+  );
+};
+
+export default Shop;
